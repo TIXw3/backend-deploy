@@ -11,7 +11,11 @@ global.resBODY = null;
 const app = express();
 
 app.use(cors({
-  origin: 'https://frontend-deploy-tixups-projects.vercel.app', 
+  origin: [
+    'https://frontend-deploy-tixups-projects.vercel.app',
+    `https://frontend-deploy-pied.vercel.app`,
+    `https://frontend-deploy-git-main-tixups-projects.vercel.app`
+    ]
   credentials: true,
 }));
 
