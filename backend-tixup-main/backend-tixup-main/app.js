@@ -14,7 +14,7 @@ const app = express();
 //app.use(cors());
 //quando for usar o frontend localmente use o cors abaixo
 app.use(cors({
-  origin: 'http://localhost:5173', // URL do frontend
+  origin: 'https://frontendtixup.vercel.app/', // URL do frontend
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
