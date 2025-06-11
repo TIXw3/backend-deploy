@@ -30,25 +30,20 @@ app.get("/", (req, res) => {
   res.send("Backend TixUp funcionando");
 });
 
+// Rotas
 const authRoutes = require("./src/routes/authRoutes");
 const eventoRoutes = require("./src/routes/eventoRoutes");
 const ingressoRoutes = require("./src/routes/ingressoRoutes");
 const colaboradorRoutes = require("./src/routes/colaboradorRoutes");
 const notificacoesRoutes = require("./src/routes/notificacoesRoutes");
-const authMiddleware = require("./src/middlewares/authMiddleware");
-const verificaTipoUsuario = require("./src/middlewares/verificaTipoUsuario");
-const colaboradorController = require("./src/controllers/colaboradoresController");
+const usuariosRoutes = require("./src/routes/usuariosRoutes");
 
-app.post(
-  "/api/usuarios/promover",
-  authMiddleware,
-  verificaTipoUsuario("organizador"),
-  colaboradorController.promoverOrganizador
-);
 app.use("/api/auth", authRoutes);
 app.use("/api/eventos", eventoRoutes);
 app.use("/api/colaboradores", colaboradorRoutes);
 app.use("/api/ingressos", ingressoRoutes);
 app.use("/api/notificacoes", notificacoesRoutes);
+app.use("/api/usuarios", usuariosRoutes);
 
 module.exports = app;
+
