@@ -106,7 +106,9 @@ describe("Eventos Endpoints", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("Eventos públicos listados com sucesso");
     expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.every(evento => evento.categoria === "show")).toBe(true);
+    expect(res.body.data.every((evento) => evento.categoria === "show")).toBe(
+      true
+    );
   }, 10000);
 
   it("deve listar eventos públicos com filtro por data", async () => {
@@ -116,7 +118,9 @@ describe("Eventos Endpoints", () => {
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("Eventos públicos listados com sucesso");
     expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.every(evento => evento.data === "2025-12-31")).toBe(true);
+    expect(res.body.data.every((evento) => evento.data === "2025-12-31")).toBe(
+      true
+    );
   }, 10000);
 
   it("não deve listar eventos com data inválida", async () => {
@@ -124,10 +128,18 @@ describe("Eventos Endpoints", () => {
 
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("O campo data deve estar no formato YYYY-MM-DD");
+    expect(res.body.message).toBe(
+      "O campo data deve estar no formato YYYY-MM-DD"
+    );
     expect(res.body.error).toHaveProperty("code", "BAD_REQUEST");
-    expect(res.body.error).toHaveProperty("details", "Nenhum detalhe adicional disponível");
-    expect(res.body.error).toHaveProperty("suggestion", "Verifique os dados enviados e tente novamente.");
+    expect(res.body.error).toHaveProperty(
+      "details",
+      "Nenhum detalhe adicional disponível"
+    );
+    expect(res.body.error).toHaveProperty(
+      "suggestion",
+      "Verifique os dados enviados e tente novamente."
+    );
   }, 10000);
 
   it("deve criar evento com organizador autenticado", async () => {
@@ -167,9 +179,14 @@ describe("Eventos Endpoints", () => {
 
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("Campos obrigatórios: nome, data, local, preco, publico");
+    expect(res.body.message).toBe(
+      "Campos obrigatórios: nome, data, local, preco, publico"
+    );
     expect(res.body.error).toHaveProperty("code", "BAD_REQUEST");
-    expect(res.body.error).toHaveProperty("suggestion", "Verifique os dados enviados e tente novamente.");
+    expect(res.body.error).toHaveProperty(
+      "suggestion",
+      "Verifique os dados enviados e tente novamente."
+    );
   }, 10000);
 
   it("não deve criar evento com imagem inválida", async () => {
@@ -199,7 +216,9 @@ describe("Eventos Endpoints", () => {
 
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.message).toBe("Eventos do organizador listados com sucesso");
+    expect(res.body.message).toBe(
+      "Eventos do organizador listados com sucesso"
+    );
     expect(Array.isArray(res.body.data)).toBe(true);
     expect(res.body.data[0]).toHaveProperty("nome");
     expect(res.body.data[0]).toHaveProperty("descricao");
@@ -261,9 +280,14 @@ describe("Eventos Endpoints", () => {
 
     expect(res.statusCode).toBe(403);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("Apenas organizadores podem acessar esta rota");
+    expect(res.body.message).toBe(
+      "Apenas usuários do tipo 'organizador' podem acessar esta rota"
+    );
     expect(res.body.error).toHaveProperty("code", "FORBIDDEN");
-    expect(res.body.error).toHaveProperty("suggestion", "Você não tem permissão para realizar esta ação. Entre em contato com o administrador.");
+    expect(res.body.error).toHaveProperty(
+      "suggestion",
+      "Você não tem permissão para realizar esta ação. Entre em contato com o administrador."
+    );
   }, 10000);
 
   it("não deve listar vendas para evento inexistente", async () => {
@@ -275,6 +299,9 @@ describe("Eventos Endpoints", () => {
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe("Evento não encontrado");
     expect(res.body.error).toHaveProperty("code", "NOT_FOUND");
-    expect(res.body.error).toHaveProperty("suggestion", "Verifique se o recurso existe ou se o ID está correto.");
+    expect(res.body.error).toHaveProperty(
+      "suggestion",
+      "Verifique se o recurso existe ou se o ID está correto."
+    );
   }, 10000);
 });
