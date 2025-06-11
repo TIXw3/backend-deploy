@@ -1,10 +1,28 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
 const eventoController = require("../controllers/eventoController");
 const authMiddleware = require("../middlewares/authMiddleware");
-const verificaTipoUsuario = require("../middlewares/verificaTipoUsuario");
+const { verificaTipoUsuario, verificaPermissaoEdicao } = require("../middlewares/verificaTipoUsuario");
+const validaEvento = require("../middlewares/validaEvento");
 const supabase = require("../config/supabaseClient");
 const { sendSuccess, sendError } = require("../utils/responseFormatter");
+
+// Configuração do multer para processar o upload de imagens
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // limite de 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    // Aceita apenas imagens
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Apenas imagens são permitidas'));
+    }
+  }
+});
 
 // Rota pública para listar eventos
 router.get(
@@ -70,36 +88,116 @@ router.get(
 // Aplica o middleware de autenticação nas rotas abaixo
 router.use(authMiddleware);
 
-const colaboradorController = require("../controllers/colaboradoresController");
-// Adiciona colaborador
-router.post(
-  "/:id/colaboradores",
-  verificaTipoUsuario("organizador"),
-  colaboradorController.adicionarColaborador
-);
-
-// Lista colaboradores
-router.get(
-  "/:id/colaboradores",
-  verificaTipoUsuario("organizador"),
-  colaboradorController.listarColaboradores
-);
-
 // Lista eventos do organizador logado
 router.get(
   "/meus-eventos",
+  authMiddleware,
+  verificaTipoUsuario("organizador"),
   (req, res, next) => {
     // #swagger.tags = ['Eventos']
     // #swagger.summary = 'Lista os eventos do organizador logado'
     // #swagger.security = [{ bearerAuth: [] }]
+    /* #swagger.responses[200] = {
+      description: "Eventos do organizador listados com sucesso",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              message: { type: "string" },
+              data: {
+                type: "array",
+                items: { $ref: "#/components/schemas/Evento" }
+              }
+            }
+          }
+        }
+      }
+    } */
     next();
   },
   eventoController.listarMeusEventos
 );
 
+// Rota pública para buscar evento por ID
+router.get(
+  "/:id",
+  (req, res, next) => {
+    // #swagger.tags = ['Eventos']
+    // #swagger.summary = 'Busca um evento específico por ID'
+    // #swagger.parameters['id'] = { in: 'path', description: 'ID do evento', required: true, type: 'string' }
+    /* #swagger.responses[200] = {
+      description: "Evento encontrado com sucesso",
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/Evento" }
+        }
+      }
+    } */
+    /* #swagger.responses[404] = {
+      description: "Evento não encontrado",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              success: { type: "boolean", example: false },
+              message: { type: "string", example: "Evento não encontrado" },
+              error: {
+                type: "object",
+                properties: {
+                  code: { type: "string", example: "NOT_FOUND" },
+                  details: { type: "string", example: "Nenhum detalhe adicional disponível" },
+                  suggestion: { type: "string", example: "Verifique se o ID do evento está correto." }
+                }
+              }
+            }
+          }
+        }
+      }
+    } */
+    next();
+  },
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const { data: evento, error } = await supabase
+        .from("eventos")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !evento) {
+        return sendError(res, "Evento não encontrado", {}, 404);
+      }
+
+      // Se o evento não for público, verifica se o usuário é o organizador
+      if (!evento.publico) {
+        if (!req.user) {
+          return sendError(res, "Evento não encontrado", {}, 404);
+        }
+
+        if (evento.organizador_id !== req.user.id) {
+          return sendError(res, "Evento não encontrado", {}, 404);
+        }
+      }
+
+      sendSuccess(res, "Evento encontrado com sucesso", evento, 200);
+    } catch (err) {
+      sendError(res, "Erro ao buscar evento", { details: err.message }, 500);
+    }
+  }
+);
+
 // Cria novo evento
 router.post(
   "/",
+  authMiddleware,
+  verificaTipoUsuario("organizador"),
+  upload.single('imagem'),
+  validaEvento(),
   (req, res, next) => {
     // #swagger.tags = ['Eventos']
     // #swagger.summary = 'Cria um novo evento'
@@ -107,7 +205,7 @@ router.post(
     /* #swagger.requestBody = {
       required: true,
       content: {
-        "application/json": {
+        "multipart/form-data": {
           schema: {
             type: "object",
             properties: {
@@ -116,7 +214,7 @@ router.post(
               data: { type: "string", format: "date", example: "2025-06-20" },
               local: { type: "string", example: "Ginásio Central" },
               preco: { type: "number", example: 99.9 },
-              imagem: { type: "string", example: "https://imagem.com/img.jpg" },
+              imagem: { type: "string", format: "binary" },
               publico: { type: "boolean", example: true },
               categoria: { type: "string", example: "show" }
             }
@@ -135,6 +233,97 @@ router.post(
     next();
   },
   eventoController.criarEvento
+);
+
+// Edita evento
+router.put(
+  "/:id",
+  authMiddleware,
+  verificaPermissaoEdicao(),
+  upload.single('imagem'),
+  validaEvento(),
+  (req, res, next) => {
+    // #swagger.tags = ['Eventos']
+    // #swagger.summary = 'Edita um evento existente'
+    // #swagger.security = [{ bearerAuth: [] }]
+    // #swagger.parameters['id'] = { in: 'path', description: 'ID do evento', required: true, type: 'string' }
+    /* #swagger.requestBody = {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              nome: { type: "string", example: "Show do Matuê - Atualizado" },
+              descricao: { type: "string", example: "Evento com novas atrações" },
+              data: { type: "string", format: "date", example: "2025-06-21" },
+              local: { type: "string", example: "Estádio Municipal" },
+              preco: { type: "number", example: 120.0 },
+              imagem: { type: "string", example: "https://imagem.com/nova-img.jpg" },
+              publico: { type: "boolean", example: true },
+              categoria: { type: "string", example: "show" }
+            }
+          }
+        }
+      }
+    } */
+    /* #swagger.responses[200] = {
+      description: "Evento atualizado com sucesso",
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/Evento" }
+        }
+      }
+    } */
+    /* #swagger.responses[400] = {
+      description: "Erro de validação nos campos fornecidos",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              success: { type: "boolean", example: false },
+              message: { type: "string", example: "Campos obrigatórios: nome, data, local, preco, publico" },
+              error: {
+                type: "object",
+                properties: {
+                  code: { type: "string", example: "BAD_REQUEST" },
+                  details: { type: "string", example: "Campos obrigatórios ausentes" },
+                  suggestion: { type: "string", example: "Verifique os campos fornecidos e tente novamente." }
+                }
+              }
+            }
+          }
+        }
+      }
+    } */
+    /* #swagger.responses[403] = {
+      description: "Não autorizado a editar este evento",
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            properties: {
+              success: { type: "boolean", example: false },
+              message: { type: "string", example: "Você não tem permissão para editar este evento" },
+              error: {
+                type: "object",
+                properties: {
+                  code: { type: "string", example: "FORBIDDEN" },
+                  details: { type: "string", example: "Apenas o organizador do evento pode editá-lo" },
+                  suggestion: { type: "string", example: "Verifique suas permissões ou contate o suporte." }
+                }
+              }
+            }
+          }
+        }
+      }
+    } */
+    /* #swagger.responses[404] = { description: "Evento não encontrado" } */
+    /* #swagger.responses[500] = { description: "Erro interno do servidor" } */
+    next();
+  },
+  eventoController.editarEvento
 );
 
 // Deleta evento
