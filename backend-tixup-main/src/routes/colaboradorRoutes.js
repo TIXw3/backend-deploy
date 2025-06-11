@@ -2,73 +2,117 @@ const express = require("express");
 const router = express.Router();
 const colaboradorController = require("../controllers/colaboradoresController");
 const authMiddleware = require("../middlewares/authMiddleware");
-const verificaTipoUsuario = require("../middlewares/verificaTipoUsuario");
+const { verificaTipoUsuario } = require("../middlewares/verificaTipoUsuario");
 
-router.use(authMiddleware);
+/**
+ * @swagger
+ * tags:
+ *   name: Colaboradores
+ *   description: Gerenciamento de colaboradores dos eventos
+ */
 
+// Adiciona um colaborador ao evento
 router.post(
-  "/eventos/:id/colaboradores",
-  verificaTipoUsuario("organizador"),
+  "/:evento_id/colaboradores",
+  authMiddleware,
+  verificaTipoUsuario("organizador", "admin"),
   (req, res, next) => {
     // #swagger.tags = ['Colaboradores']
-    // #swagger.summary = 'Adiciona um colaborador a um evento'
+    // #swagger.summary = 'Adicionar colaborador a um evento'
     // #swagger.security = [{ bearerAuth: [] }]
-    // #swagger.parameters['id'] = { in: 'path', description: 'ID do evento', required: true, type: 'string' }
+    /* #swagger.parameters['evento_id'] = {
+        in: 'path',
+        description: 'ID do evento',
+        required: true,
+        type: 'string'
+    } */
     /* #swagger.requestBody = {
-      required: true,
-      content: {
-        "application/json": {
-          schema: {
-            type: "object",
-            properties: {
-              usuario_id: { type: "string", example: "uuid-do-usuario" },
-              permissao: { type: "string", example: "checkin" }
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                usuario_id: { type: "string" },
+                permissao: { type: "string", example: "checkin" }
+              },
+              required: ["usuario_id", "permissao"]
             }
           }
         }
-      }
+    } */
+    /* #swagger.responses[201] = {
+        description: 'Colaborador adicionado com sucesso',
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                  type: "object",
+                  properties: {
+                    id: { type: "string" },
+                    usuario_id: { type: "string" },
+                    evento_id: { type: "string" },
+                    permissao: { type: "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
     } */
     next();
   },
   colaboradorController.adicionarColaborador
 );
 
+// Lista os colaboradores do evento
 router.get(
-  "/eventos/:id/colaboradores",
-  verificaTipoUsuario("organizador"),
+  "/:evento_id/colaboradores",
+  authMiddleware,
+  verificaTipoUsuario("organizador", "admin"),
   (req, res, next) => {
     // #swagger.tags = ['Colaboradores']
-    // #swagger.summary = 'Lista os colaboradores de um evento'
+    // #swagger.summary = 'Listar colaboradores de um evento'
     // #swagger.security = [{ bearerAuth: [] }]
-    // #swagger.parameters['id'] = { in: 'path', description: 'ID do evento', required: true, type: 'string' }
-    next();
-  },
-  colaboradorController.listarColaboradores
-);
-
-router.put(
-  "/promover-organizador",
-  verificaTipoUsuario("organizador"),
-  (req, res, next) => {
-    // #swagger.tags = ['Colaboradores']
-    // #swagger.summary = 'Promove um usuário a organizador'
-    // #swagger.security = [{ bearerAuth: [] }]
-    /* #swagger.requestBody = {
-      required: true,
-      content: {
-        "application/json": {
-          schema: {
-            type: "object",
-            properties: {
-              usuario_id: { type: "string", example: "uuid-do-usuario" }
+    /* #swagger.parameters['evento_id'] = {
+        in: 'path',
+        description: 'ID do evento',
+        required: true,
+        type: 'string'
+    } */
+    /* #swagger.responses[200] = {
+        description: 'Lista de colaboradores retornada com sucesso',
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      id: { type: "string" },
+                      usuario_id: { type: "string" },
+                      evento_id: { type: "string" },
+                      permissao: { type: "string" }
+                    }
+                  }
+                }
+              }
             }
           }
         }
-      }
     } */
     next();
   },
-  colaboradorController.promoverOrganizador
+  colaboradorController.listarColaboradores
 );
 
 module.exports = router;
