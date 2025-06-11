@@ -33,6 +33,7 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "multer": "^2.0.1",
     "swagger-autogen": "^2.23.7",
     "swagger-ui-express": "^5.0.1"
   },
