@@ -174,3 +174,97 @@ exports.cadastro = async (req, res) => {
     sendError(res, "Erro ao realizar cadastro", { details: err.message }, 500);
   }
 };
+
+exports.getMe = async (req, res) => {
+  if (!req.user) {
+    return sendError(res, "Usuário não autenticado", {}, 401);
+  }
+
+  return sendSuccess(res, "Usuário autenticado", req.user, 200);
+};
+
+exports.promoverOrganizador = async (req, res) => {
+  try {
+    const { usuario_id } = req.body;
+
+    const { data: usuario, error: usuarioError } = await supabase
+      .from("usuarios")
+      .select("id, tipo")
+      .eq("id", usuario_id)
+      .single();
+
+    if (usuarioError || !usuario) {
+      return sendError(res, "Usuário não encontrado", {}, 404);
+    }
+
+    if (usuario.tipo === "organizador") {
+      return sendError(res, "Usuário já é organizador", {}, 400);
+    }
+
+    const { data, error } = await supabase
+      .from("usuarios")
+      .update({ tipo: "organizador" })
+      .eq("id", usuario_id)
+      .select()
+      .single();
+
+    if (error) {
+      return sendError(
+        res,
+        "Erro ao promover usuário",
+        { details: error.message },
+        500
+      );
+    }
+
+    sendSuccess(
+      res,
+      "Usuário promovido a organizador com sucesso",
+      { usuario: data },
+      200
+    );
+  } catch (err) {
+    sendError(res, "Erro ao promover usuário", { details: err.message }, 500);
+  }
+};
+
+exports.promoverColaborador = async (req, res) => {
+  try {
+    const { usuario_id, evento_id, permissao } = req.body;
+    console.log("🔥 Body recebido:", req.body);
+
+    const { data, error } = await supabase
+      .from("colaboradores")
+      .insert([{ usuario_id, evento_id, permissao }])
+      .select();
+
+    console.log("📦 Retorno data:", data);
+    console.log("❌ Retorno error:", error);
+
+    if (error) {
+      console.log("🔴 Erro inserção:", error);
+      return sendError(
+        res,
+        "Erro ao promover usuário a colaborador",
+        {
+          details: error.message,
+        },
+        500
+      );
+    }
+
+    console.log("🟢 Inserção feita com sucesso");
+
+    return sendSuccess(
+      res,
+      "Usuário promovido a colaborador com sucesso",
+      {
+        colaborador: { usuario_id, evento_id, permissao },
+      },
+      200
+    );
+  } catch (err) {
+    console.error("🔥 Erro geral:", err);
+    return sendError(res, "Erro ao promover usuário a colaborador", {}, 500);
+  }
+};
