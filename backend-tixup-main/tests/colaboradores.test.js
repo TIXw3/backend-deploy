@@ -51,15 +51,20 @@ describe("Colaboradores Endpoints", () => {
     eventoId = evento.body.data.id;
     console.log("Evento criado com ID:", eventoId);
 
-    const cadastroColaborador = await request(app).post("/api/auth/cadastro").send({
-      nome: "Colaborador Teste",
-      email: emailColaborador,
-      senha,
-      tipo: "usuario",
-    });
+    const cadastroColaborador = await request(app)
+      .post("/api/auth/cadastro")
+      .send({
+        nome: "Colaborador Teste",
+        email: emailColaborador,
+        senha,
+        tipo: "usuario",
+      });
 
     if (cadastroColaborador.statusCode !== 201) {
-      console.error("❌ Erro ao cadastrar colaborador:", cadastroColaborador.body);
+      console.error(
+        "❌ Erro ao cadastrar colaborador:",
+        cadastroColaborador.body
+      );
       throw new Error("Falha ao cadastrar colaborador");
     }
 
@@ -74,7 +79,7 @@ describe("Colaboradores Endpoints", () => {
   }, 15000);
 
   afterAll(async () => {
-    await supabase.from("colaboradores_eventos").delete().eq("evento_id", eventoId);
+    await supabase.from("colaboradores").delete().eq("evento_id", eventoId);
     await supabase.from("eventos").delete().eq("id", eventoId);
     await supabase.from("usuarios").delete().eq("email", emailOrg);
     await supabase.from("usuarios").delete().eq("email", emailColaborador);
@@ -89,7 +94,7 @@ describe("Colaboradores Endpoints", () => {
         permissao: "Assistente",
       });
 
-    console.log("Resposta adicionar colaborador:", res.statusCode, resBODY);
+    console.log("Resposta adicionar colaborador:", res.statusCode, res.body);
     expect(res.statusCode).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe("Colaborador adicionado com sucesso");
@@ -105,7 +110,11 @@ describe("Colaboradores Endpoints", () => {
         // permissao ausente
       });
 
-    console.log("Resposta adicionar colaborador (campos faltando):", res.statusCode, res.body);
+    console.log(
+      "Resposta adicionar colaborador (campos faltando):",
+      res.statusCode,
+      res.body
+    );
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe("Campos obrigatórios: usuario_id, permissao");
@@ -137,15 +146,21 @@ describe("Colaboradores Endpoints", () => {
       .get(`/api/eventos/inexistente/colaboradores`)
       .set("Authorization", `Bearer ${tokenOrganizador}`);
 
-    console.log("Resposta listar colaboradores (evento inexistente):", res.statusCode, res.body);
+    console.log(
+      "Resposta listar colaboradores (evento inexistente):",
+      res.statusCode,
+      res.body
+    );
     expect(res.statusCode).toBe(404);
     expect(res.body.success).toBe(false);
-    expect(res.body.message).toBe("Evento não encontrado ou você não é o organizador");
+    expect(res.body.message).toBe(
+      "Evento não encontrado ou você não é o organizador"
+    );
   }, 10000);
 
   it("deve promover um usuário a organizador", async () => {
     const res = await request(app)
-      .post("/api/usuarios/promover")
+      .put("/api/auth/promover-organizador")
       .set("Authorization", `Bearer ${tokenOrganizador}`)
       .send({
         usuario_id: colaboradorId,
@@ -154,18 +169,24 @@ describe("Colaboradores Endpoints", () => {
     console.log("Resposta promover usuário:", res.statusCode, res.body);
     expect(res.statusCode).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.message).toBe("Usuário promovido a organizador com sucesso");
+    expect(res.body.message).toBe(
+      "Usuário promovido a organizador com sucesso"
+    );
   }, 10000);
 
   it("não deve promover com usuario_id inválido", async () => {
     const res = await request(app)
-      .post("/api/usuarios/promover")
+      .put("/api/auth/promover-organizador")
       .set("Authorization", `Bearer ${tokenOrganizador}`)
       .send({
         usuario_id: "invalido",
       });
 
-    console.log("Resposta promover usuário (usuario_id inválido):", res.statusCode, res.body);
+    console.log(
+      "Resposta promover usuário (usuario_id inválido):",
+      res.statusCode,
+      res.body
+    );
     expect(res.statusCode).toBe(404);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe("Usuário não encontrado");
@@ -173,33 +194,39 @@ describe("Colaboradores Endpoints", () => {
 
   it("não deve promover usuário já organizador", async () => {
     await request(app)
-      .post("/api/usuarios/promover")
+      .put("/api/auth/promover-organizador")
       .set("Authorization", `Bearer ${tokenOrganizador}`)
       .send({
         usuario_id: colaboradorId,
       });
 
     const res = await request(app)
-      .post("/api/usuarios/promover")
+      .put("/api/auth/promover-organizador")
       .set("Authorization", `Bearer ${tokenOrganizador}`)
       .send({
         usuario_id: colaboradorId,
       });
 
-    console.log("Resposta promover usuário (já organizador):", res.statusCode, res.body);
+    console.log(
+      "Resposta promover usuário (já organizador):",
+      res.statusCode,
+      res.body
+    );
     expect(res.statusCode).toBe(400);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe("Usuário já é organizador");
   }, 10000);
 
   it("não deve promover sem autenticação", async () => {
-    const res = await request(app)
-      .post("/api/usuarios/promover")
-      .send({
-        usuario_id: colaboradorId,
-      });
+    const res = await request(app).put("/api/auth/promover-organizador").send({
+      usuario_id: colaboradorId,
+    });
 
-    console.log("Resposta promover usuário (sem autenticação):", res.statusCode, res.body);
+    console.log(
+      "Resposta promover usuário (sem autenticação):",
+      res.statusCode,
+      res.body
+    );
     expect(res.statusCode).toBe(401);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toBe("Token não fornecido");
